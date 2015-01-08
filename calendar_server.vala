@@ -50,34 +50,42 @@ public class CalendarServer : Object {
                     description = note,
                     all_day = true,
                     start = new DateTime.local(year, month, day, 9, 0, 0).to_unix(),
-                    end = new DateTime.local(year, month, day, 17, 0, 0).to_unix()
+                    end = new DateTime.local(year, month, day, 17, 0, 0).to_unix(),
+                    extras = new HashTable<string, Variant>(null, null)
                 };
                 events += e;
             }
+            i = i.add_days(1);
         }
         return events;
     }
 
-    public bool has_calendars { get; private set; default = true; }
-    public int64 since { get; private set; default = 0; }
-    public int64 until { get; private set; default = 0; } 
+    public bool has_calendars { get; set; default = true; }
+    public int64 since { get; set; default = 0; }
+    public int64 until { get; set; default = 0; } 
 
     public signal void changed();
 
     public CalendarServer() {
         try {
-            int stdout;
-            Process.spawn_async_with_pipes(null, { "inotifywait", "-m", "-r", notes_dir() }, null, 
-                SpawnFlags.SEARCH_PATH, null, null, null, out stdout, null);
+            int stdout = 0;
+            bool success = Process.spawn_async_with_pipes(null, 
+                { "inotifywait", "-m", "-r", notes_dir(), "-e", "moved_to",
+                  "-e", "moved_from", "-e", "modify", "-e", "delete" }, null, 
+                SpawnFlags.SEARCH_PATH, null, null, null, out stdout);
+            if (!success) {
+                stderr.printf("failed to watch notes\n");
+                return;
+            }
             IOChannel watch = new IOChannel.unix_new(stdout);
-            watch.add_watch(IOCondition.IN, (source, condition) => {
+            var r = watch.add_watch(IOCondition.IN, (source, condition) => {
                 try {
                     if (condition == IOCondition.HUP) {
                         return false;
                     } else {
-                        string i1;
+                        string line;
                         size_t i2, i3;
-                        watch.read_line(out i1, out i2, out i3);
+                        source.read_line(out line, out i2, out i3);
                         changed();
                         return true;
                     }
@@ -86,7 +94,10 @@ public class CalendarServer : Object {
                     return true;
                 }
             });
-        } catch (SpawnError e) {
+            if (r == 0) {
+                stderr.printf("failed to add watch\n");
+            }
+        } catch (Error e) {
             stderr.printf("watch notes error: %s\n", e.message);
         }
     }
