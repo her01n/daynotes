@@ -1,6 +1,7 @@
 using GLib;
 using Gtk;
 
+// TODO check if the class GLib.Date can save us some of these methods
 int days_of_year(int year) {
     if (year % 4 == 0) {
         if (year % 100 == 0) {
@@ -141,11 +142,11 @@ private class Worker {
     private WorkerCallback loaded;
     private WorkerCallback error;
 
-    public Worker(owned WorkerCallback loaded, owned WorkerCallback error) {
+    public Worker(owned WorkerCallback loaded, owned WorkerCallback error) throws ThreadError {
         this.loaded = (owned) loaded;
         this.error = (owned) error;
         // TODO funny i can't start a background thread properly
-        Thread.create<string>(run, true);
+        Thread.create<string>(run, false);
     }
 
     private class Task {
@@ -174,26 +175,19 @@ private class Worker {
                 while (load == null) {
                     load = todo.pop().load;
                 }
+                int day = load.get_day_of_month();
+                int month = load.get_month();
                 int year = load.get_year();
-                int day = load.get_day_of_year();
-                var day_path = "~/.local/daynotes/%d/%d".printf(year, day);
-                string text;
-                if (FileUtils.test(day_path, FileTest.EXISTS)) {
-                    FileUtils.get_contents(day_path, out text);
-                } else {
-                    text = "";
-                }
+                var text = read_note(day, month, year);
                 Idle.add(() => {
                     loaded(text);
                     return false;
                 });
                 Task task;
-                string? saved = null;
                 while ((task = todo.pop()).save != null) {
-                    if (saved != task.save) {
-                        saved = task.save;
-                        DirUtils.create_with_parents(Path.get_dirname(day_path), 0700);
-                        FileUtils.set_contents(day_path, task.save);
+                    if (text != task.save) {
+                        text = task.save;
+                        save_note(day, month, year, task.save);
                     }
                 }
                 load = task.load;
@@ -261,7 +255,7 @@ public class App : Window {
         show_over(notice);
     }
 
-    public App() {
+    public App() throws ThreadError {
         set_default_size(400, 300);
         var previous = new Button.from_icon_name("go-previous", IconSize.BUTTON);
         previous.relief = ReliefStyle.NONE;
@@ -296,9 +290,14 @@ public class App : Window {
 }
 
 int main(string[] args) {
-    Gtk.init(ref args);
-    new App().show_all();
-    Gtk.main();
-    return 0;
+    try {
+        Gtk.init(ref args);
+        new App().show_all();
+        Gtk.main();
+        return 0;
+    } catch (Error e) {
+        stderr.printf("Error: %s\n", e.message);
+        return -1;
+    }
 }
 

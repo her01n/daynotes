@@ -1,5 +1,10 @@
-default:
-	valac --pkg gtk+-3.0 main.vala -o daynotes 2>&1 | perl valac_remove_columns.pl
+
+default: all
+
+all: 
+	perl make.pl
 
 clean:
-	rm -rf daynotes
+	rm -rf bin
+
+.PHONY: all clean default
