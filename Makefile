@@ -10,8 +10,11 @@ clean:
 	rm -rf bin
 
 install:
+	mkdir -p /usr/local/bin
 	install bin/daynotes /usr/local/bin/daynotes
+	mkdir -p /usr/local/libexec
 	install bin/daynotes-calendar-server /usr/local/libexec/daynotes-calendar-server
+	mkdir -p /usr/local/share/applications
 	install daynotes.desktop /usr/local/share/applications/daynotes.desktop
 	# XXX ugly hack
 	mv /usr/share/dbus-1/services/org.gnome.Shell.CalendarServer.service /usr/share/dbus-1/services/org.gnome.Shell.CalendarServer.service.backup || true
