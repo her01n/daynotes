@@ -7,3 +7,4 @@ Exec=daynotes
 Terminal=false
 Type=Application
 Categories=GNOME;GTK;Calendar;
+MimeType=text/calendar;

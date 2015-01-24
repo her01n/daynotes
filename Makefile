@@ -16,6 +16,7 @@ install:
 	install bin/daynotes-calendar-server /usr/local/libexec/daynotes-calendar-server
 	mkdir -p /usr/local/share/applications
 	install daynotes.desktop /usr/local/share/applications/daynotes.desktop
+	update-desktop-database
 	# XXX ugly hack
 	mv /usr/share/dbus-1/services/org.gnome.Shell.CalendarServer.service /usr/share/dbus-1/services/org.gnome.Shell.CalendarServer.service.backup || true
 	install fake.CalendarServer.service /usr/share/dbus-1/services/org.gnome.Shell.CalendarServer.service
