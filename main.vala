@@ -212,10 +212,11 @@ public class App : Window {
     private TextView notes = new TextView();
     private Widget over = null;
     private Worker worker;
+    private string date_format;
 
     public void set_date(DateTime set) {
         current = set;
-        header.title = set.format("%x");
+        header.title = set.format(date_format);
         header.subtitle = relation(set, new DateTime.now_local());
         notes.editable = false;
         if (loading != null) {
@@ -255,6 +256,14 @@ public class App : Window {
     }
 
     public App() throws ThreadError {
+        try {
+            Process.spawn_command_line_sync("""gettext "gnome-shell" "%A %B %e, %Y" """, out date_format);
+        } catch (Error e) {
+            stderr.printf("Error getting date format: %s\n", e.message);
+        }
+        if (date_format == null || date_format == "") {
+            date_format = "%A %B %e, %Y";
+        }
         set_default_size(400, 300);
         var previous = new Button.from_icon_name("go-previous", IconSize.BUTTON);
         previous.clicked.connect(() => {
