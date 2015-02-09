@@ -78,7 +78,6 @@ int year_diff(DateTime a, DateTime b) {
     return 0;
 }
 
-
 public class TimedTask {
 
     private bool running = true;
@@ -258,18 +257,17 @@ public class App : Window {
     public App() throws ThreadError {
         set_default_size(400, 300);
         var previous = new Button.from_icon_name("go-previous", IconSize.BUTTON);
-        previous.relief = ReliefStyle.NONE;
         previous.clicked.connect(() => {
             set_date(current.add_days(-1));
         });
         var next = new Button.from_icon_name("go-next", IconSize.BUTTON);
-        next.relief = ReliefStyle.NONE;
         next.clicked.connect(() => {
             set_date(current.add_days(1));
         });
         var navigation = new Box(Orientation.HORIZONTAL, 0);
         navigation.add(previous);
         navigation.add(next);
+        navigation.get_style_context().add_class("linked");
         header.show_close_button = true;
         header.pack_start(navigation);
         set_titlebar(header);
