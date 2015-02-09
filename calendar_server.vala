@@ -67,6 +67,7 @@ public class CalendarServer : Object {
     public signal void changed();
 
     public CalendarServer() {
+        // watch notes for changes
         try {
             int stdout = 0;
             bool success = Process.spawn_async_with_pipes(null, 
@@ -100,6 +101,22 @@ public class CalendarServer : Object {
         } catch (Error e) {
             stderr.printf("watch notes error: %s\n", e.message);
         }
+        // watch for midnight
+        install_midnight_timer();
+    }
+
+    void install_midnight_timer() {
+        DateTime tomorrow = new DateTime.now_local();
+        tomorrow.add_days(1);
+        DateTime next_midnight = new DateTime.local(
+            tomorrow.get_year(), tomorrow.get_month(), tomorrow.get_day_of_month(),
+            0, 0, 0);
+        int64 timeout = next_midnight.difference(new DateTime.now_local()) / 1000; // micro -> milli
+        Timeout.add((int) timeout, () => {
+            changed();
+            install_midnight_timer();
+            return false;
+        });
     }
 
 }
