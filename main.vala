@@ -214,7 +214,7 @@ public class App : Window {
     private Widget over = null;
     private Worker worker;
 
-    private void set_date(DateTime set) {
+    public void set_date(DateTime set) {
         current = set;
         header.title = set.format("%x");
         header.subtitle = relation(set, new DateTime.now_local());
@@ -292,10 +292,33 @@ public class App : Window {
 int main(string[] args) {
     try {
         Gtk.init(ref args);
-        new App().show_all();
+        App app = new App();
+        try {
+            // TODO use the DBUS api for this - when it compiles
+            string stdout;
+            Process.spawn_command_line_sync("""dbus-send --print-reply=literal --dest=org.gnome.Shell /org/gnome/Shell org.gnome.Shell.Eval string:'Main.panel.statusArea["dateMenu"]._calendar._selectedDate'""", out stdout);
+            if (stdout != null && stdout.split("\n").length > 1) {
+                var success = stdout.split("\n")[0].strip();
+                var result = stdout.split("\n")[1].strip();
+                if ("true" in success) {
+                    string year = result.substring(1, 4);
+                    string month = result.substring(6, 2);
+                    string day = result.substring(9, 2);
+                    DateTime date = new DateTime.local(int.parse(year), int.parse(month), int.parse(day), 12, 0, 0);
+                    app.set_date(date);
+                } else {
+                    stderr.printf("shell eval not successful: %s\n", result);
+                }
+            } else {
+                stderr.printf("shell eval not successful: %s\n", stdout);
+            }
+        } catch (Error error) {
+            stderr.printf("Error setting date: %s\n", error.message);
+        }
+        app.show_all();
         Gtk.main();
         return 0;
-    } catch (Error e) {
+    } catch (ThreadError e) {
         stderr.printf("Error: %s\n", e.message);
         return -1;
     }
